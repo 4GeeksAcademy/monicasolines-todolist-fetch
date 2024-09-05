@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export const TodoList = () => {
     const [todo, setTodo] = useState('');
     const [todos, setTodos] = useState([])
     const [hovered, setHovered] = useState(null);
+    const host = 'https://playground.4geeks.com/todo/users'
+
 
     const addTodo = () => {
         setTodos([...todos, todo]);
@@ -13,6 +15,30 @@ export const TodoList = () => {
     const eliminarLi = (index) => {
         setTodos(todos.filter((element, i) => i !== index));
     }
+
+    const getTodos = async () => {
+        const uri = `${host}/monisolines`;
+        const options = {
+            method: 'GET',
+        }
+
+        const response = await fetch(uri, options);
+
+        if (!response.ok) {
+            console.log('Error:', response.status, response.statusText);
+            return
+        }
+
+        const data = await response.json();
+        console.log('Error:', response.status, response.statusText);
+
+        setTodos(data.todos)
+
+    }
+
+    useEffect (() => {
+        getTodos();
+    }, []);
 
     return (
         <div className="container">
