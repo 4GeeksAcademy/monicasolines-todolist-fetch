@@ -5,14 +5,25 @@ export const TodoList = () => {
     const [todos, setTodos] = useState([])
     const [hovered, setHovered] = useState(null);
     const host = 'https://playground.4geeks.com/todo'
+    const randomUserId = Math.floor(Math.random() * 1000) + 1;
+    const [username, setUsername] = useState('')
+    const [alertVisible, setAlertVisible] = useState(false);
 
 
+    // este agrega un todo al usuario que ingreses arriba
     const addTodo = async () => {
+        if (!username) {
+            setAlertVisible(true);
+            return;
+        }
+
+        await getTodos(username);
+
         const dataToSend = {
             label: todo,
             is_done: false,
         }
-        const uri = `${host}/todos/monisolines`;
+        const uri = `${host}/todos/${username}`;
         const options = {
             method: 'POST',
             headers: {
@@ -28,11 +39,13 @@ export const TodoList = () => {
             return
         }
         setTodo('');
-        getTodos();
+        getTodos(username);
         // setTodos([...todos, todo]);
 
     }
 
+
+    //elimina todo del usuario en el que estes
     const eliminarLi = async (id) => {
         const uri = `${host}/todos/${id}`;
         const options = {
@@ -46,13 +59,14 @@ export const TodoList = () => {
             return
         }
 
-        getTodos();
+        getTodos(username);
 
         // setTodos(todos.filter((element, i) => i !== index));
     }
 
-    const getTodos = async () => {
-        const uri = `${host}/users/monisoline`;
+    //trae los todos del usuario
+    const getTodos = async (username) => {
+        const uri = `${host}/users/${username}`;
         const options = {
             method: 'GET',
         }
@@ -62,40 +76,91 @@ export const TodoList = () => {
         if (!response.ok) {
             console.log('Error:', response.status, response.statusText);
             if (response.status === 404) {
-                // podriamos crear el usuario, llamando a funcion ej: createUser
+                createUser(username);
+                return;
             }
-            return
         }
-
         const data = await response.json();
-        console.log(data);
 
         setTodos(data.todos)
 
     }
 
+    // crea o cambia entre usuarios
+    const createUser = async (username) => {
+        const dataToSend = {
+            name: username,
+            id: randomUserId,
+        }
+        await getTodos(username);
+        const uri = `${host}/users/${username}`;
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataToSend),
+        }
+        const response = await fetch(uri, options);
+
+        if (!response.ok) {
+            console.log('Error:', response.status, response.statusText);
+            return
+        }
+
+        const data = await response.json();
 
 
-    useEffect(() => {
-        getTodos();
-    }, []);
+        setTodos(data.todos)
+        getTodos(username);
+        setAlertVisible(false);
+    }
+
+    // useEffect(() => {
+    //     getTodos();
+    // }, []);
 
     return (
         <div className="container">
             <h1 className="text-light m-3" style={{ fontFamily: 'Raleway, sans-serif', fontWeight: 100 }}> Todo List</h1>
+            <div className="alert alert-danger" role="alert" style={{ visibility: alertVisible ? 'visible' : 'hidden' }}>
+                User doesn't exist! You need to enter a username(can be new or already existing)
+            </div>
             <div className="todo-list">
                 <ul className="list-group" id="ul" style={{ listStyleType: 'none' }}>
                     <li className="list-group-item">
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="inputTodo"
-                            placeholder={todos.length !== 0 ? "Write to add another one" : "No tasks, add a task!"}
-                            value={todo}
-                            onChange={event => setTodo(event.target.value)}
-                            onKeyDown={event => { if (event.key === 'Enter') { addTodo(); } }}
-                            style={{ fontFamily: 'Raleway, sans-serif', fontWeight: 100 }}
-                        />
+                        <form>
+                            <input
+                                type="text"
+                                className="form-control m-2"
+                                id="inputUsername"
+                                placeholder="Enter Username"
+                                value={username}
+                                onChange={event => setUsername(event.target.value)}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        getTodos(username);
+                                    }
+                                }}
+                                style={{ fontFamily: 'Raleway, sans-serif', fontWeight: 100 }}
+                            />
+                            <input
+                                type="text"
+                                className="form-control m-2"
+                                id="inputTodo"
+                                placeholder={todos && todos.length !== 0 ? "Write to add another one" : "No tasks, add a task!"}
+                                value={todo}
+                                onChange={event => setTodo(event.target.value)}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        addTodo();
+                                    }
+                                }}
+                                style={{ fontFamily: 'Raleway, sans-serif', fontWeight: 100 }}
+                            />
+                        </form>
                     </li>
                     {todos.map((element, index) => (
                         <li
