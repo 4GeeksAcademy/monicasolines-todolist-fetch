@@ -108,10 +108,6 @@ export const TodoList = () => {
             return
         }
 
-        const data = await response.json();
-
-
-        setTodos(data.todos)
         getTodos(username);
         setAlertVisible(false);
     }
